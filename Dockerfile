@@ -1,49 +1,40 @@
-FROM r-base
+FROM ubuntu:18.04
 
-RUN apt-get update 
-RUN apt-get install -y apt-utils
-RUN apt-get install -y gnupg2
-RUN apt-get install -y software-properties-common
-RUN apt-get update
+ENV TZ=Europe/Rome
 
-RUN apt-get -y install build-essential checkinstall
-  
-RUN apt install -y python-minimal
+RUN apt update && \
+    apt install -y gnupg gnupg2 gnupg1 software-properties-common curl && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN Rscript -e "install.packages('Rcpp')"
-RUN Rscript -e "install.packages('abind')"
-RUN Rscript -e "install.packages('RNifti')"
-RUN Rscript -e "install.packages('bitops')"
-RUN Rscript -e "install.packages('oro.nifti')"
+# install r-base
 
-#RUN wget -O- http://neuro.debian.net/lists/trusty.us-ca.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
-RUN wget -O- http://neuro.debian.net/lists/bullseye.us-ca.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
-RUN apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
-RUN apt-get update
-RUN apt-get install -y ants
-RUN apt-get install -y gcc-10-base
-RUN apt-get install -y libgcc-s1
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && \
+    add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' && \
+    apt update && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    apt install -y --no-install-recommends r-base && \
+    rm -rf /var/lib/apt/lists/*
 
+RUN Rscript -e "install.packages('Rcpp')" && \
+    Rscript -e "install.packages('abind')" && \
+    Rscript -e "install.packages('RNifti')" && \
+    Rscript -e "install.packages('bitops')" && \
+    Rscript -e "install.packages('oro.nifti')"
 
 #install neurodebian
-RUN wget -O- http://neuro.debian.net/lists/xenial.us-tn.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
-RUN apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
 
-#install fsl
-#RUN add-apt-repository ppa:linuxuprising/libpng12
-RUN apt-get update
-#RUN apt-get install libpng12-0
-RUN wget http://security.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1.1_amd64.deb
+RUN apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xA5D32F012649A5A9 && \
+    apt-add-repository "deb http://neurodeb.pirsquared.org bionic main contrib non-free" && \
+    apt-add-repository "deb http://neurodeb.pirsquared.org data main contrib non-free" && \
+    apt-get update && apt-get install -y --no-install-recommends ants fsl python-numpy fsl-first-data fsl-mni152-templates && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN dpkg -i libpng12-0_1.2.54-1ubuntu1.1_amd64.deb
-RUN apt-get update
+RUN apt-get update && \
+    curl http://security.ubuntu.com/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1.1_amd64.deb -o libpng12-0_1.2.54-1ubuntu1.1_amd64.deb && \
+    dpkg -i libpng12-0_1.2.54-1ubuntu1.1_amd64.deb && \
+    curl http://archive.ubuntu.com/ubuntu/pool/universe/n/nifticlib/libnifti2_2.0.0-2_amd64.deb -o libnifti2_2.0.0-2_amd64.deb && \
+    dpkg -i libnifti2_2.0.0-2_amd64.deb && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install fsl python-numpy
-RUN apt-get install -y fsl-first-data
-RUN apt-get install -y fsl-mni152-templates
-
-RUN wget http://archive.ubuntu.com/ubuntu/pool/universe/n/nifticlib/libnifti2_2.0.0-2_amd64.deb
-RUN dpkg -i libnifti2_2.0.0-2_amd64.deb 
 
 ENV FSLDIR=/usr/share/fsl/5.0
 ENV PATH=$PATH:$FSLDIR/bin
