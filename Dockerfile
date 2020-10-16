@@ -13,6 +13,9 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD5
     apt update && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     apt install -y --no-install-recommends r-base && \
     rm -rf /var/lib/apt/lists/*
+    
+RUN apt update
+RUN apt install -y build-essential
 
 RUN Rscript -e "install.packages('Rcpp')" && \
     Rscript -e "install.packages('abind')" && \
